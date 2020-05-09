@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+
+<head>
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/ress/dist/ress.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/scrollify/1.0.19/jquery.scrollify.min.js"></script>
+
+  <style>
+    .section {
+      width: 100%;
+      text-align: center;
+    }
+
+    .home {
+      background: #65c2cf;
+    }
+
+    .second {
+      background: #e14456;
+    }
+
+    .last {
+      background: #6dcb94;
+    }
+  </style>
+
+  <script>
+    $(function () {
+      $.scrollify({
+        section: ".section",
+      });
+
+      $(".js-scrollify-move").each(function () {
+        $(this).click(function () {
+          let href = $(this).attr("href");
+          $.scrollify.move(href);
+        });
+      });
+    });
+  </script>
+</head>
+
+<body>
+  <div class="section home" data-section-name="home">
+    <h1>Home</h1>
+    <ul>
+      <li><a class="js-scrollify-move" href="#home">#home</a></li>
+      <li><a class="js-scrollify-move" href="#second">#second</a></li>
+      <li><a class="js-scrollify-move" href="#last">#last</a></li>
+    </ul>
+  </div>
+  <div class="section second" data-section-name="second">
+    <h1>Second</h1>
+    <ul>
+      <li><a class="js-scrollify-move" href="#home">#home</a></li>
+      <li><a class="js-scrollify-move" href="#second">#second</a></li>
+      <li><a class="js-scrollify-move" href="#last">#last</a></li>
+    </ul>
+  </div>
+  <div class="section last" data-section-name="last">
+    <h1>Last</h1>
+    <ul>
+      <li><a class="js-scrollify-move" href="#home">#home</a></li>
+      <li><a class="js-scrollify-move" href="#second">#second</a></li>
+      <li><a class="js-scrollify-move" href="#last">#last</a></li>
+    </ul>
+  </div>
+</body>
+
+</html>
