@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <script>
+    window.onload = function () {
+      var ua = navigator.userAgent;
+      // ie11
+      if (ua.indexOf("Trident") !== -1) {
+        alert(
+          "Internet Explorer 11 のサポート終了日は2029年1月9日です。"
+        );
+      } else {
+        alert(
+          "Internet Explorer 11 で動作確認してください。"
+        );
+      }
+    };
+  </script>
+</head>
+
+<body>
+</body>
+
+</html>
