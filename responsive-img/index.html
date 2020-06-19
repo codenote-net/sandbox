@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>Responsive images (Desktop/Mobile)</title>
+
+  <link href="destyle.css" rel="stylesheet" />
+  <style>
+    .pc {
+      display: block !important;
+    }
+
+    .sp {
+      display: none !important;
+    }
+
+    @media only screen and (max-width: 767px) {
+      .pc {
+        display: none !important;
+      }
+
+      .sp {
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <img class="pc" src="2560x6000.png" width="100%" />
+  <img class="sp" src="1242x5200.png" width="100%" />
+</body>
+
+</html>
