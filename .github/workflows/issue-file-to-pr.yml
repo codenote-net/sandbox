@@ -1,6 +1,8 @@
 name: Issue File to PR
 
 on:
+  issues:
+    types: [opened]
   issue_comment:
     types: [created]
 
@@ -36,9 +38,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          COMMENT_ID: ${{ github.event.comment.id }}
+          COMMENT_BODY: ${{ github.event.comment.body || github.event.issue.body }}
+          COMMENT_ID: ${{ github.event.comment.id || github.event.issue.id }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           node .github/scripts/process-issue-files.ts
       
@@ -52,12 +55,13 @@ jobs:
           body: |
             This PR adds files uploaded to issue #${{ github.event.issue.number }}
             
-            Uploaded by: @${{ github.event.comment.user.login }}
-            Comment: ${{ github.event.comment.html_url }}
+            Uploaded by: @${{ github.event.comment.user.login || github.event.issue.user.login }}
+            Source: ${{ github.event.comment.html_url || github.event.issue.html_url }}
+            Event: ${{ github.event_name }}
             
             Files added:
             ${{ steps.process.outputs.file_list }}
-          branch: issue-${{ github.event.issue.number }}-files-${{ github.event.comment.id }}
+          branch: issue-${{ github.event.issue.number }}-files-${{ github.event.comment.id || github.event.issue.id }}
           delete-branch: true
           labels: |
             automated-pr
