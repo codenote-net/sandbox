@@ -166,7 +166,7 @@ async function main(): Promise<void> {
     // Create metadata file
     const metadata: FileMetadata = {
       issue_number: issueNumber,
-      comment_id: commentId || '',
+      comment_id: commentId,
       files: downloadedFiles,
       timestamp: new Date().toISOString()
     };
