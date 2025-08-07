@@ -19,26 +19,67 @@ interface FileMetadata {
   timestamp: string;
 }
 
+// Common pattern for valid filename characters in GitHub URLs
+// Supports alphanumeric, dots, hyphens, underscores, and URL-encoded characters (including spaces as %20)
+// Also supports parentheses, brackets, and other common filename characters when URL-encoded
+const FILENAME_CHARS = '[\\w\\-\\.%()\\[\\]+=!@#$&,]+';
+
+// Pre-compiled regex patterns for performance
+const ASSET_PATTERN = new RegExp(`https://github\\.com/[^/]+/[^/]+/assets/\\d+/${FILENAME_CHARS}`, 'g');
+const ATTACHMENT_PATTERN = new RegExp(`https://github\\.com/user-attachments/files/\\d+/${FILENAME_CHARS}`, 'g');
+const MARKDOWN_ASSET_LINK_PATTERN = new RegExp(`\\[[^\\]]*\\]\\((https://github\\.com/[^/]+/[^/]+/assets/\\d+/${FILENAME_CHARS})\\)`, 'g');
+const MARKDOWN_ATTACHMENT_LINK_PATTERN = new RegExp(`\\[[^\\]]*\\]\\((https://github\\.com/user-attachments/files/\\d+/${FILENAME_CHARS})\\)`, 'g');
+const MARKDOWN_RAW_LINK_PATTERN = /\[[^\]]*\]\((https:\/\/raw\.githubusercontent\.com\/[^\)]+)\)/g;
+const IMG_PATTERN = /!\[[^\]]*\]\((https:\/\/[^\)]+)\)/g;
+
 function extractFileUrls(commentBody: string): string[] {
-  const urls: string[] = [];
+  const urlSet = new Set<string>();
   
-  // GitHub uploaded file URL pattern
-  const assetPattern = /https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-]+/g;
-  const assetMatches = commentBody.match(assetPattern) || [];
-  urls.push(...assetMatches);
+  // GitHub uploaded file URL patterns
+  // Pattern 1: /assets/ URLs (older format)
+  const assetMatches = commentBody.match(ASSET_PATTERN) || [];
+  assetMatches.forEach(url => urlSet.add(url));
   
-  // Markdown image format pattern
-  const imgPattern = /!\[[^\]]*\]\((https:\/\/[^\)]+)\)/g;
-  let imgMatch;
-  while ((imgMatch = imgPattern.exec(commentBody)) !== null) {
+  // Pattern 2: /user-attachments/files/ URLs (newer format)
+  const attachmentMatches = commentBody.match(ATTACHMENT_PATTERN) || [];
+  attachmentMatches.forEach(url => urlSet.add(url));
+  
+  // Pattern 3: Markdown link formats for different file URL types
+  // Split into separate patterns for better maintainability
+  
+  // 3a. Markdown link to /assets/
+  // Reset lastIndex to ensure pattern starts from beginning
+  MARKDOWN_ASSET_LINK_PATTERN.lastIndex = 0;
+  let assetLinkMatch: RegExpExecArray | null;
+  while ((assetLinkMatch = MARKDOWN_ASSET_LINK_PATTERN.exec(commentBody)) !== null) {
+    urlSet.add(assetLinkMatch[1]);
+  }
+  
+  // 3b. Markdown link to /user-attachments/files/
+  MARKDOWN_ATTACHMENT_LINK_PATTERN.lastIndex = 0;
+  let attachmentLinkMatch: RegExpExecArray | null;
+  while ((attachmentLinkMatch = MARKDOWN_ATTACHMENT_LINK_PATTERN.exec(commentBody)) !== null) {
+    urlSet.add(attachmentLinkMatch[1]);
+  }
+  
+  // 3c. Markdown link to raw.githubusercontent.com
+  MARKDOWN_RAW_LINK_PATTERN.lastIndex = 0;
+  let rawLinkMatch: RegExpExecArray | null;
+  while ((rawLinkMatch = MARKDOWN_RAW_LINK_PATTERN.exec(commentBody)) !== null) {
+    urlSet.add(rawLinkMatch[1]);
+  }
+  
+  // Pattern 4: Markdown image format
+  IMG_PATTERN.lastIndex = 0;
+  let imgMatch: RegExpExecArray | null;
+  while ((imgMatch = IMG_PATTERN.exec(commentBody)) !== null) {
     const url = imgMatch[1];
     if (url.includes('user-images.githubusercontent.com') || url.includes('github.com')) {
-      urls.push(url);
+      urlSet.add(url);
     }
   }
   
-  // Remove duplicates
-  return [...new Set(urls)];
+  return Array.from(urlSet);
 }
 
 // Only allow downloading from official GitHub domains
