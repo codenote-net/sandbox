@@ -16,7 +16,7 @@ function extractFileUrls(commentBody: string): string[] {
   const urls: string[] = [];
   
   // GitHub uploaded file URL pattern
-  const assetPattern = /https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[a-f0-9\-]+/g;
+  const assetPattern = /https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-]+/g;
   const assetMatches = commentBody.match(assetPattern) || [];
   urls.push(...assetMatches);
   
