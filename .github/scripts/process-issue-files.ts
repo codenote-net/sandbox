@@ -6,6 +6,7 @@ import * as path from 'path';
 import { existsSync } from 'fs';
 
 const MAX_FILENAME_LENGTH = 200;
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB limit
 
 interface FileMetadata {
   issue_number: string;
@@ -68,7 +69,24 @@ async function downloadFile(url: string, token: string): Promise<Buffer | null> 
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
+    // Check content-length if available
+    const contentLength = response.headers.get('content-length');
+    if (contentLength) {
+      const size = parseInt(contentLength, 10);
+      if (size > MAX_FILE_SIZE) {
+        console.error(`File too large: ${size} bytes exceeds limit of ${MAX_FILE_SIZE} bytes`);
+        return null;
+      }
+    }
+    
     const arrayBuffer = await response.arrayBuffer();
+    
+    // Double-check actual size after download
+    if (arrayBuffer.byteLength > MAX_FILE_SIZE) {
+      console.error(`Downloaded file too large: ${arrayBuffer.byteLength} bytes exceeds limit of ${MAX_FILE_SIZE} bytes`);
+      return null;
+    }
+    
     const buffer = Buffer.from(arrayBuffer);
     return buffer;
   } catch (error) {
