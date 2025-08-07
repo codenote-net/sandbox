@@ -45,24 +45,43 @@ jobs:
         run: |
           node .github/scripts/process-issue-files.ts
       
-      - name: Create Pull Request
+      - name: Setup git and create branch
         if: steps.process.outputs.files_processed == 'true'
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Add files from issue #${{ github.event.issue.number }}"
-          title: "Add uploaded files from issue #${{ github.event.issue.number }}"
-          body: |
-            This PR adds files uploaded to issue #${{ github.event.issue.number }}
-            
-            Uploaded by: @${{ github.event.comment.user.login || github.event.issue.user.login }}
-            Source: ${{ github.event.comment.html_url || github.event.issue.html_url }}
-            Event: ${{ github.event_name }}
-            
-            Files added:
-            ${{ steps.process.outputs.file_list }}
-          branch: issue-${{ github.event.issue.number }}-files-${{ github.event.comment.id || github.event.issue.id }}
-          delete-branch: true
-          labels: |
-            automated-pr
-            from-issue
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BRANCH_NAME="issue-${{ github.event.issue.number }}-files-${{ github.event.comment.id || github.event.issue.id }}"
+          git checkout -b "$BRANCH_NAME"
+          git add uploaded_files/
+          if ! git diff --cached --quiet; then
+            git commit -m "Add files from issue #${{ github.event.issue.number }}"
+            git push -u origin "$BRANCH_NAME" || { echo "::error::Failed to push branch to remote"; exit 1; }
+          else
+            echo "::warning::No changes to commit. Skipping commit and push."
+            exit 0
+          fi
+      
+      - name: Create Pull Request with GitHub CLI
+        if: steps.process.outputs.files_processed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --title "Add uploaded files from issue #${{ github.event.issue.number }}" \
+            --body "$(cat <<'EOF'
+          ## Summary
+          This PR adds files uploaded to issue #${{ github.event.issue.number }}
+          
+          - **Uploaded by**: @${{ github.event.comment.user.login || github.event.issue.user.login }}
+          - **Source**: ${{ github.event.comment.html_url || github.event.issue.html_url }}
+          - **Event**: ${{ github.event_name }}
+          
+          ## Files added
+          ${{ steps.process.outputs.file_list }}
+          
+          ---
+          *This PR was automatically generated from issue attachments*
+          EOF
+          )" \
+            --label "automated-pr" \
+            --label "from-issue"
