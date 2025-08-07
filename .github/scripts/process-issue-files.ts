@@ -20,27 +20,24 @@ interface FileMetadata {
 }
 
 function extractFileUrls(commentBody: string): string[] {
-  const urls: string[] = [];
+  const urlSet = new Set<string>();
   
   // GitHub uploaded file URL patterns
   // Pattern 1: /assets/ URLs (older format)
   const assetPattern = /https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-]+/g;
   const assetMatches = commentBody.match(assetPattern) || [];
-  urls.push(...assetMatches);
+  assetMatches.forEach(url => urlSet.add(url));
   
   // Pattern 2: /user-attachments/files/ URLs (newer format)
   const attachmentPattern = /https:\/\/github\.com\/user-attachments\/files\/\d+\/[\w\-\.]+/g;
   const attachmentMatches = commentBody.match(attachmentPattern) || [];
-  urls.push(...attachmentMatches);
+  attachmentMatches.forEach(url => urlSet.add(url));
   
   // Pattern 3: Markdown link format for any GitHub URLs
   const markdownLinkPattern = /\[([^\]]*)\]\((https:\/\/github\.com\/[^\)]+)\)/g;
   let linkMatch;
   while ((linkMatch = markdownLinkPattern.exec(commentBody)) !== null) {
-    const url = linkMatch[2];
-    if (!urls.includes(url)) {
-      urls.push(url);
-    }
+    urlSet.add(linkMatch[2]);
   }
   
   // Pattern 4: Markdown image format
@@ -49,14 +46,11 @@ function extractFileUrls(commentBody: string): string[] {
   while ((imgMatch = imgPattern.exec(commentBody)) !== null) {
     const url = imgMatch[1];
     if (url.includes('user-images.githubusercontent.com') || url.includes('github.com')) {
-      if (!urls.includes(url)) {
-        urls.push(url);
-      }
+      urlSet.add(url);
     }
   }
   
-  // Remove duplicates
-  return [...new Set(urls)];
+  return Array.from(urlSet);
 }
 
 // Only allow downloading from official GitHub domains
