@@ -34,7 +34,33 @@ function extractFileUrls(commentBody: string): string[] {
   return [...new Set(urls)];
 }
 
+// Only allow downloading from official GitHub domains
+function isAllowedGithubDomain(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    const allowedHosts = [
+      'github.com',
+      'user-images.githubusercontent.com',
+      'raw.githubusercontent.com',
+      'gist.githubusercontent.com',
+      'githubusercontent.com'
+    ];
+    // Check for exact match or subdomain of allowed hosts
+    return allowedHosts.some(allowedHost =>
+      parsed.hostname === allowedHost ||
+      parsed.hostname.endsWith('.' + allowedHost)
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function downloadFile(url: string, token: string): Promise<Buffer | null> {
+  if (!isAllowedGithubDomain(url)) {
+    console.error(`Refusing to download from untrusted domain: ${url}`);
+    return null;
+  }
+  
   try {
     const response = await fetch(url, {
       headers: {
