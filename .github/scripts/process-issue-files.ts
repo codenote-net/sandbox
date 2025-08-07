@@ -87,7 +87,11 @@ async function ensureUniqueFilename(dir: string, filename: string): Promise<stri
 }
 
 async function setOutput(name: string, value: string): Promise<void> {
-  console.log(`::set-output name=${name}::${value}`);
+  const outputPath = process.env.GITHUB_OUTPUT;
+  if (!outputPath) {
+    throw new Error('GITHUB_OUTPUT environment variable is not set.');
+  }
+  await fs.appendFile(outputPath, `${name}=${value}\n`);
 }
 
 async function main(): Promise<void> {
