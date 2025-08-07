@@ -48,7 +48,8 @@ async function downloadFile(url: string, token: string): Promise<Buffer | null> 
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const buffer = await response.buffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     return buffer;
   } catch (error) {
     console.error(`Error downloading ${url}:`, error);
