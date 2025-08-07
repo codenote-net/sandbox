@@ -5,6 +5,8 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync } from 'fs';
 
+const MAX_FILENAME_LENGTH = 200;
+
 interface FileMetadata {
   issue_number: string;
   comment_id: string;
@@ -102,10 +104,10 @@ function sanitizeFilename(filename: string): string {
   }
   
   // Limit filename length (255 is common limit, use 200 to be safe)
-  if (filename.length > 200) {
+  if (filename.length > MAX_FILENAME_LENGTH) {
     const ext = path.extname(filename);
     const nameWithoutExt = path.basename(filename, ext);
-    filename = nameWithoutExt.substring(0, 200 - ext.length) + ext;
+    filename = nameWithoutExt.substring(0, MAX_FILENAME_LENGTH - ext.length) + ext;
   }
   
   // Ensure filename is not empty
