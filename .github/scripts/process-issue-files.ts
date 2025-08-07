@@ -6,7 +6,11 @@ import * as path from 'path';
 import { existsSync } from 'fs';
 
 const MAX_FILENAME_LENGTH = 200;
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB limit
+// GitHub's file size constraints:
+// - Files uploaded to issues/PRs have a 25MB limit per file, 100MB total per comment
+// - Repository files via web interface have a 100MB warning threshold
+// We use 25MB to match the per-file limit for issue attachments
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB limit per file
 
 interface FileMetadata {
   issue_number: string;
