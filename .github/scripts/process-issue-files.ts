@@ -203,7 +203,8 @@ async function main(): Promise<void> {
   
   // Ensure targetDir is within baseDir to prevent path traversal
   const resolvedTargetDir = path.resolve(targetDir);
-  if (!resolvedTargetDir.startsWith(baseDir + path.sep)) {
+  const relative = path.relative(baseDir, resolvedTargetDir);
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
     console.error('Path traversal detected in target directory');
     process.exit(1);
   }
