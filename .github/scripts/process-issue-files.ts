@@ -23,7 +23,9 @@ function extractFileUrls(commentBody: string): string[] {
   const urlSet = new Set<string>();
   
   // Common pattern for valid filename characters in GitHub URLs
-  const filenameChars = '[\\w\\-\\.%]+';
+  // Supports alphanumeric, dots, hyphens, underscores, and URL-encoded characters (including spaces as %20)
+  // Also supports parentheses, brackets, and other common filename characters when URL-encoded
+  const filenameChars = '[\\w\\-\\.%()\\[\\]+=!@#$&,]+';
   
   // Base URL patterns as strings for reuse
   const assetUrlPattern = `https://github\\.com/[^/]+/[^/]+/assets/\\d+/${filenameChars}`;
