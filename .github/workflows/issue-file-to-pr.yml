@@ -46,6 +46,7 @@ jobs:
           node .github/scripts/process-issue-files.ts
       
       - name: Setup git and create branch
+        id: git_push
         if: steps.process.outputs.files_processed == 'true'
         run: |
           git config user.name "github-actions[bot]"
@@ -56,13 +57,14 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "Add files from issue #${{ github.event.issue.number }}"
             git push -u origin "$BRANCH_NAME" || { echo "::error::Failed to push branch to remote"; exit 1; }
+            echo "branch_created=true" >> $GITHUB_OUTPUT
           else
             echo "::warning::No changes to commit. Skipping commit and push."
-            exit 0
+            echo "branch_created=false" >> $GITHUB_OUTPUT
           fi
       
       - name: Create Pull Request with GitHub CLI
-        if: steps.process.outputs.files_processed == 'true'
+        if: steps.process.outputs.files_processed == 'true' && steps.git_push.outputs.branch_created == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
