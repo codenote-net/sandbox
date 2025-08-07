@@ -33,12 +33,28 @@ function extractFileUrls(commentBody: string): string[] {
   const attachmentMatches = commentBody.match(attachmentPattern) || [];
   attachmentMatches.forEach(url => urlSet.add(url));
   
-  // Pattern 3: Markdown link format for GitHub file URLs only
-  // Only match links to /assets/, /user-attachments/files/, or raw.githubusercontent.com
-  const markdownFileLinkPattern = /\[([^\]]*)\]\((https:\/\/github\.com\/(?:[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-]+|user-attachments\/files\/\d+\/[\w\-\.%]+)|https:\/\/raw\.githubusercontent\.com\/[^\)]+)\)/g;
-  let linkMatch;
-  while ((linkMatch = markdownFileLinkPattern.exec(commentBody)) !== null) {
-    urlSet.add(linkMatch[2]);
+  // Pattern 3: Markdown link formats for different file URL types
+  // Split into separate patterns for better maintainability
+  
+  // 3a. Markdown link to /assets/
+  const markdownAssetLinkPattern = /\[[^\]]*\]\((https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-]+)\)/g;
+  let assetLinkMatch;
+  while ((assetLinkMatch = markdownAssetLinkPattern.exec(commentBody)) !== null) {
+    urlSet.add(assetLinkMatch[1]);
+  }
+  
+  // 3b. Markdown link to /user-attachments/files/
+  const markdownAttachmentLinkPattern = /\[[^\]]*\]\((https:\/\/github\.com\/user-attachments\/files\/\d+\/[\w\-\.%]+)\)/g;
+  let attachmentLinkMatch;
+  while ((attachmentLinkMatch = markdownAttachmentLinkPattern.exec(commentBody)) !== null) {
+    urlSet.add(attachmentLinkMatch[1]);
+  }
+  
+  // 3c. Markdown link to raw.githubusercontent.com
+  const markdownRawLinkPattern = /\[[^\]]*\]\((https:\/\/raw\.githubusercontent\.com\/[^\)]+)\)/g;
+  let rawLinkMatch;
+  while ((rawLinkMatch = markdownRawLinkPattern.exec(commentBody)) !== null) {
+    urlSet.add(rawLinkMatch[1]);
   }
   
   // Pattern 4: Markdown image format
