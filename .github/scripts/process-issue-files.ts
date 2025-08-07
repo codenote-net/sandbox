@@ -22,18 +22,36 @@ interface FileMetadata {
 function extractFileUrls(commentBody: string): string[] {
   const urls: string[] = [];
   
-  // GitHub uploaded file URL pattern
+  // GitHub uploaded file URL patterns
+  // Pattern 1: /assets/ URLs (older format)
   const assetPattern = /https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-]+/g;
   const assetMatches = commentBody.match(assetPattern) || [];
   urls.push(...assetMatches);
   
-  // Markdown image format pattern
+  // Pattern 2: /user-attachments/files/ URLs (newer format)
+  const attachmentPattern = /https:\/\/github\.com\/user-attachments\/files\/\d+\/[\w\-\.]+/g;
+  const attachmentMatches = commentBody.match(attachmentPattern) || [];
+  urls.push(...attachmentMatches);
+  
+  // Pattern 3: Markdown link format for any GitHub URLs
+  const markdownLinkPattern = /\[([^\]]*)\]\((https:\/\/github\.com\/[^\)]+)\)/g;
+  let linkMatch;
+  while ((linkMatch = markdownLinkPattern.exec(commentBody)) !== null) {
+    const url = linkMatch[2];
+    if (!urls.includes(url)) {
+      urls.push(url);
+    }
+  }
+  
+  // Pattern 4: Markdown image format
   const imgPattern = /!\[[^\]]*\]\((https:\/\/[^\)]+)\)/g;
   let imgMatch;
   while ((imgMatch = imgPattern.exec(commentBody)) !== null) {
     const url = imgMatch[1];
     if (url.includes('user-images.githubusercontent.com') || url.includes('github.com')) {
-      urls.push(url);
+      if (!urls.includes(url)) {
+        urls.push(url);
+      }
     }
   }
   
