@@ -22,14 +22,17 @@ interface FileMetadata {
 function extractFileUrls(commentBody: string): string[] {
   const urlSet = new Set<string>();
   
+  // Common pattern for valid filename characters in GitHub URLs
+  const filenameChars = '[\\w\\-\\.%]+';
+  
   // GitHub uploaded file URL patterns
   // Pattern 1: /assets/ URLs (older format)
-  const assetPattern = /https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-\.%]+/g;
+  const assetPattern = new RegExp(`https://github\\.com/[^/]+/[^/]+/assets/\\d+/${filenameChars}`, 'g');
   const assetMatches = commentBody.match(assetPattern) || [];
   assetMatches.forEach(url => urlSet.add(url));
   
   // Pattern 2: /user-attachments/files/ URLs (newer format)
-  const attachmentPattern = /https:\/\/github\.com\/user-attachments\/files\/\d+\/[\w\-\.%]+/g;
+  const attachmentPattern = new RegExp(`https://github\\.com/user-attachments/files/\\d+/${filenameChars}`, 'g');
   const attachmentMatches = commentBody.match(attachmentPattern) || [];
   attachmentMatches.forEach(url => urlSet.add(url));
   
@@ -37,14 +40,14 @@ function extractFileUrls(commentBody: string): string[] {
   // Split into separate patterns for better maintainability
   
   // 3a. Markdown link to /assets/
-  const markdownAssetLinkPattern = /\[[^\]]*\]\((https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-\.%]+)\)/g;
+  const markdownAssetLinkPattern = new RegExp(`\\[[^\\]]*\\]\\((https://github\\.com/[^/]+/[^/]+/assets/\\d+/${filenameChars})\\)`, 'g');
   let assetLinkMatch;
   while ((assetLinkMatch = markdownAssetLinkPattern.exec(commentBody)) !== null) {
     urlSet.add(assetLinkMatch[1]);
   }
   
   // 3b. Markdown link to /user-attachments/files/
-  const markdownAttachmentLinkPattern = /\[[^\]]*\]\((https:\/\/github\.com\/user-attachments\/files\/\d+\/[\w\-\.%]+)\)/g;
+  const markdownAttachmentLinkPattern = new RegExp(`\\[[^\\]]*\\]\\((https://github\\.com/user-attachments/files/\\d+/${filenameChars})\\)`, 'g');
   let attachmentLinkMatch;
   while ((attachmentLinkMatch = markdownAttachmentLinkPattern.exec(commentBody)) !== null) {
     urlSet.add(attachmentLinkMatch[1]);
