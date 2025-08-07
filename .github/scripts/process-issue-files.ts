@@ -24,7 +24,7 @@ function extractFileUrls(commentBody: string): string[] {
   
   // GitHub uploaded file URL patterns
   // Pattern 1: /assets/ URLs (older format)
-  const assetPattern = /https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-]+/g;
+  const assetPattern = /https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-\.%]+/g;
   const assetMatches = commentBody.match(assetPattern) || [];
   assetMatches.forEach(url => urlSet.add(url));
   
@@ -37,7 +37,7 @@ function extractFileUrls(commentBody: string): string[] {
   // Split into separate patterns for better maintainability
   
   // 3a. Markdown link to /assets/
-  const markdownAssetLinkPattern = /\[[^\]]*\]\((https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-]+)\)/g;
+  const markdownAssetLinkPattern = /\[[^\]]*\]\((https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[\w\-\.%]+)\)/g;
   let assetLinkMatch;
   while ((assetLinkMatch = markdownAssetLinkPattern.exec(commentBody)) !== null) {
     urlSet.add(assetLinkMatch[1]);
