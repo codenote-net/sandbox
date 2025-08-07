@@ -57,6 +57,39 @@ async function downloadFile(url: string, token: string): Promise<Buffer | null> 
   }
 }
 
+function sanitizeFilename(filename: string): string {
+  // Reserved filenames on Windows
+  const reservedNames = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 
+    'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 
+    'LPT6', 'LPT7', 'LPT8', 'LPT9'];
+  
+  // Replace invalid characters
+  filename = filename.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_');
+  
+  // Trim dots and spaces from start and end
+  filename = filename.replace(/^[\s.]+|[\s.]+$/g, '');
+  
+  // Check for reserved names
+  const nameWithoutExt = filename.split('.')[0].toUpperCase();
+  if (reservedNames.includes(nameWithoutExt)) {
+    filename = `_${filename}`;
+  }
+  
+  // Limit filename length (255 is common limit, use 200 to be safe)
+  if (filename.length > 200) {
+    const ext = path.extname(filename);
+    const nameWithoutExt = path.basename(filename, ext);
+    filename = nameWithoutExt.substring(0, 200 - ext.length) + ext;
+  }
+  
+  // Ensure filename is not empty
+  if (!filename) {
+    filename = 'file';
+  }
+  
+  return filename;
+}
+
 function getFilenameFromUrl(url: string): string {
   // Get the last part of the URL
   let filename = url.split('/').pop() || 'file';
@@ -66,8 +99,8 @@ function getFilenameFromUrl(url: string): string {
     filename = `${filename}.bin`;
   }
   
-  // Sanitize filename (allow only alphanumeric, hyphen, underscore, and dot)
-  filename = filename.replace(/[^\w\-_.]/g, '_');
+  // Sanitize filename for cross-platform compatibility
+  filename = sanitizeFilename(filename);
   
   return filename;
 }
