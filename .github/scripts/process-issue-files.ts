@@ -175,6 +175,12 @@ async function main(): Promise<void> {
   // Get repository information
   const [owner, repo] = repository.split('/');
   
+  // Validate issue number contains only digits
+  if (!/^\d+$/.test(issueNumber)) {
+    console.error(`Invalid issue number format: ${issueNumber}`);
+    process.exit(1);
+  }
+  
   // Directory to save files
   const targetDir = path.join('uploaded_files', `issue_${issueNumber}`);
   
