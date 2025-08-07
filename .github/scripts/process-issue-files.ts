@@ -25,14 +25,18 @@ function extractFileUrls(commentBody: string): string[] {
   // Common pattern for valid filename characters in GitHub URLs
   const filenameChars = '[\\w\\-\\.%]+';
   
+  // Base URL patterns as strings for reuse
+  const assetUrlPattern = `https://github\\.com/[^/]+/[^/]+/assets/\\d+/${filenameChars}`;
+  const attachmentUrlPattern = `https://github\\.com/user-attachments/files/\\d+/${filenameChars}`;
+  
   // GitHub uploaded file URL patterns
   // Pattern 1: /assets/ URLs (older format)
-  const assetPattern = new RegExp(`https://github\\.com/[^/]+/[^/]+/assets/\\d+/${filenameChars}`, 'g');
+  const assetPattern = new RegExp(assetUrlPattern, 'g');
   const assetMatches = commentBody.match(assetPattern) || [];
   assetMatches.forEach(url => urlSet.add(url));
   
   // Pattern 2: /user-attachments/files/ URLs (newer format)
-  const attachmentPattern = new RegExp(`https://github\\.com/user-attachments/files/\\d+/${filenameChars}`, 'g');
+  const attachmentPattern = new RegExp(attachmentUrlPattern, 'g');
   const attachmentMatches = commentBody.match(attachmentPattern) || [];
   attachmentMatches.forEach(url => urlSet.add(url));
   
@@ -40,14 +44,14 @@ function extractFileUrls(commentBody: string): string[] {
   // Split into separate patterns for better maintainability
   
   // 3a. Markdown link to /assets/
-  const markdownAssetLinkPattern = new RegExp(`\\[[^\\]]*\\]\\((https://github\\.com/[^/]+/[^/]+/assets/\\d+/${filenameChars})\\)`, 'g');
+  const markdownAssetLinkPattern = new RegExp(`\\[[^\\]]*\\]\\((${assetUrlPattern})\\)`, 'g');
   let assetLinkMatch;
   while ((assetLinkMatch = markdownAssetLinkPattern.exec(commentBody)) !== null) {
     urlSet.add(assetLinkMatch[1]);
   }
   
   // 3b. Markdown link to /user-attachments/files/
-  const markdownAttachmentLinkPattern = new RegExp(`\\[[^\\]]*\\]\\((https://github\\.com/user-attachments/files/\\d+/${filenameChars})\\)`, 'g');
+  const markdownAttachmentLinkPattern = new RegExp(`\\[[^\\]]*\\]\\((${attachmentUrlPattern})\\)`, 'g');
   let attachmentLinkMatch;
   while ((attachmentLinkMatch = markdownAttachmentLinkPattern.exec(commentBody)) !== null) {
     urlSet.add(attachmentLinkMatch[1]);
