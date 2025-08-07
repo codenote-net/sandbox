@@ -19,57 +19,60 @@ interface FileMetadata {
   timestamp: string;
 }
 
+// Common pattern for valid filename characters in GitHub URLs
+// Supports alphanumeric, dots, hyphens, underscores, and URL-encoded characters (including spaces as %20)
+// Also supports parentheses, brackets, and other common filename characters when URL-encoded
+const FILENAME_CHARS = '[\\w\\-\\.%()\\[\\]+=!@#$&,]+';
+
+// Pre-compiled regex patterns for performance
+const ASSET_PATTERN = new RegExp(`https://github\\.com/[^/]+/[^/]+/assets/\\d+/${FILENAME_CHARS}`, 'g');
+const ATTACHMENT_PATTERN = new RegExp(`https://github\\.com/user-attachments/files/\\d+/${FILENAME_CHARS}`, 'g');
+const MARKDOWN_ASSET_LINK_PATTERN = new RegExp(`\\[[^\\]]*\\]\\((https://github\\.com/[^/]+/[^/]+/assets/\\d+/${FILENAME_CHARS})\\)`, 'g');
+const MARKDOWN_ATTACHMENT_LINK_PATTERN = new RegExp(`\\[[^\\]]*\\]\\((https://github\\.com/user-attachments/files/\\d+/${FILENAME_CHARS})\\)`, 'g');
+const MARKDOWN_RAW_LINK_PATTERN = /\[[^\]]*\]\((https:\/\/raw\.githubusercontent\.com\/[^\)]+)\)/g;
+const IMG_PATTERN = /!\[[^\]]*\]\((https:\/\/[^\)]+)\)/g;
+
 function extractFileUrls(commentBody: string): string[] {
   const urlSet = new Set<string>();
   
-  // Common pattern for valid filename characters in GitHub URLs
-  // Supports alphanumeric, dots, hyphens, underscores, and URL-encoded characters (including spaces as %20)
-  // Also supports parentheses, brackets, and other common filename characters when URL-encoded
-  const filenameChars = '[\\w\\-\\.%()\\[\\]+=!@#$&,]+';
-  
-  // Base URL patterns as strings for reuse
-  const assetUrlPattern = `https://github\\.com/[^/]+/[^/]+/assets/\\d+/${filenameChars}`;
-  const attachmentUrlPattern = `https://github\\.com/user-attachments/files/\\d+/${filenameChars}`;
-  
   // GitHub uploaded file URL patterns
   // Pattern 1: /assets/ URLs (older format)
-  const assetPattern = new RegExp(assetUrlPattern, 'g');
-  const assetMatches = commentBody.match(assetPattern) || [];
+  const assetMatches = commentBody.match(ASSET_PATTERN) || [];
   assetMatches.forEach(url => urlSet.add(url));
   
   // Pattern 2: /user-attachments/files/ URLs (newer format)
-  const attachmentPattern = new RegExp(attachmentUrlPattern, 'g');
-  const attachmentMatches = commentBody.match(attachmentPattern) || [];
+  const attachmentMatches = commentBody.match(ATTACHMENT_PATTERN) || [];
   attachmentMatches.forEach(url => urlSet.add(url));
   
   // Pattern 3: Markdown link formats for different file URL types
   // Split into separate patterns for better maintainability
   
   // 3a. Markdown link to /assets/
-  const markdownAssetLinkPattern = new RegExp(`\\[[^\\]]*\\]\\((${assetUrlPattern})\\)`, 'g');
+  // Reset lastIndex to ensure pattern starts from beginning
+  MARKDOWN_ASSET_LINK_PATTERN.lastIndex = 0;
   let assetLinkMatch: RegExpExecArray | null;
-  while ((assetLinkMatch = markdownAssetLinkPattern.exec(commentBody)) !== null) {
+  while ((assetLinkMatch = MARKDOWN_ASSET_LINK_PATTERN.exec(commentBody)) !== null) {
     urlSet.add(assetLinkMatch[1]);
   }
   
   // 3b. Markdown link to /user-attachments/files/
-  const markdownAttachmentLinkPattern = new RegExp(`\\[[^\\]]*\\]\\((${attachmentUrlPattern})\\)`, 'g');
+  MARKDOWN_ATTACHMENT_LINK_PATTERN.lastIndex = 0;
   let attachmentLinkMatch: RegExpExecArray | null;
-  while ((attachmentLinkMatch = markdownAttachmentLinkPattern.exec(commentBody)) !== null) {
+  while ((attachmentLinkMatch = MARKDOWN_ATTACHMENT_LINK_PATTERN.exec(commentBody)) !== null) {
     urlSet.add(attachmentLinkMatch[1]);
   }
   
   // 3c. Markdown link to raw.githubusercontent.com
-  const markdownRawLinkPattern = /\[[^\]]*\]\((https:\/\/raw\.githubusercontent\.com\/[^\)]+)\)/g;
+  MARKDOWN_RAW_LINK_PATTERN.lastIndex = 0;
   let rawLinkMatch: RegExpExecArray | null;
-  while ((rawLinkMatch = markdownRawLinkPattern.exec(commentBody)) !== null) {
+  while ((rawLinkMatch = MARKDOWN_RAW_LINK_PATTERN.exec(commentBody)) !== null) {
     urlSet.add(rawLinkMatch[1]);
   }
   
   // Pattern 4: Markdown image format
-  const imgPattern = /!\[[^\]]*\]\((https:\/\/[^\)]+)\)/g;
+  IMG_PATTERN.lastIndex = 0;
   let imgMatch: RegExpExecArray | null;
-  while ((imgMatch = imgPattern.exec(commentBody)) !== null) {
+  while ((imgMatch = IMG_PATTERN.exec(commentBody)) !== null) {
     const url = imgMatch[1];
     if (url.includes('user-images.githubusercontent.com') || url.includes('github.com')) {
       urlSet.add(url);
