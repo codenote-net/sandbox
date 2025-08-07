@@ -197,8 +197,16 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   
-  // Directory to save files
-  const targetDir = path.join('uploaded_files', `issue_${issueNumber}`);
+  // Directory to save files with path traversal protection
+  const baseDir = path.resolve('uploaded_files');
+  const targetDir = path.join(baseDir, `issue_${issueNumber}`);
+  
+  // Ensure targetDir is within baseDir to prevent path traversal
+  const resolvedTargetDir = path.resolve(targetDir);
+  if (!resolvedTargetDir.startsWith(baseDir + path.sep)) {
+    console.error('Path traversal detected in target directory');
+    process.exit(1);
+  }
   
   // Create directory
   await fs.mkdir(targetDir, { recursive: true });
