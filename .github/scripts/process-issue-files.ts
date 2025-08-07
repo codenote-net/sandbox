@@ -47,28 +47,28 @@ function extractFileUrls(commentBody: string): string[] {
   
   // 3a. Markdown link to /assets/
   const markdownAssetLinkPattern = new RegExp(`\\[[^\\]]*\\]\\((${assetUrlPattern})\\)`, 'g');
-  let assetLinkMatch;
+  let assetLinkMatch: RegExpExecArray | null;
   while ((assetLinkMatch = markdownAssetLinkPattern.exec(commentBody)) !== null) {
     urlSet.add(assetLinkMatch[1]);
   }
   
   // 3b. Markdown link to /user-attachments/files/
   const markdownAttachmentLinkPattern = new RegExp(`\\[[^\\]]*\\]\\((${attachmentUrlPattern})\\)`, 'g');
-  let attachmentLinkMatch;
+  let attachmentLinkMatch: RegExpExecArray | null;
   while ((attachmentLinkMatch = markdownAttachmentLinkPattern.exec(commentBody)) !== null) {
     urlSet.add(attachmentLinkMatch[1]);
   }
   
   // 3c. Markdown link to raw.githubusercontent.com
   const markdownRawLinkPattern = /\[[^\]]*\]\((https:\/\/raw\.githubusercontent\.com\/[^\)]+)\)/g;
-  let rawLinkMatch;
+  let rawLinkMatch: RegExpExecArray | null;
   while ((rawLinkMatch = markdownRawLinkPattern.exec(commentBody)) !== null) {
     urlSet.add(rawLinkMatch[1]);
   }
   
   // Pattern 4: Markdown image format
   const imgPattern = /!\[[^\]]*\]\((https:\/\/[^\)]+)\)/g;
-  let imgMatch;
+  let imgMatch: RegExpExecArray | null;
   while ((imgMatch = imgPattern.exec(commentBody)) !== null) {
     const url = imgMatch[1];
     if (url.includes('user-images.githubusercontent.com') || url.includes('github.com')) {
