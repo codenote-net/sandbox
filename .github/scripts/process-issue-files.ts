@@ -38,7 +38,7 @@ async function downloadFile(url: string, token: string): Promise<Buffer | null> 
   try {
     const response = await fetch(url, {
       headers: {
-        'Authorization': `token ${token}`,
+        'Authorization': `Bearer ${token}`,
         'Accept': 'application/octet-stream'
       },
       redirect: 'follow'
