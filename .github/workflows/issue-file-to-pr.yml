@@ -53,8 +53,13 @@ jobs:
           BRANCH_NAME="issue-${{ github.event.issue.number }}-files-${{ github.event.comment.id || github.event.issue.id }}"
           git checkout -b "$BRANCH_NAME"
           git add uploaded_files/
-          git commit -m "Add files from issue #${{ github.event.issue.number }}"
-          git push -u origin "$BRANCH_NAME" || { echo "::error::Failed to push branch to remote"; exit 1; }
+          if ! git diff --cached --quiet; then
+            git commit -m "Add files from issue #${{ github.event.issue.number }}"
+            git push -u origin "$BRANCH_NAME" || { echo "::error::Failed to push branch to remote"; exit 1; }
+          else
+            echo "::warning::No changes to commit. Skipping commit and push."
+            exit 0
+          fi
       
       - name: Create Pull Request with GitHub CLI
         if: steps.process.outputs.files_processed == 'true'
