@@ -40,18 +40,10 @@ function extractFileUrls(commentBody: string): string[] {
 function isAllowedGithubDomain(urlString: string): boolean {
   try {
     const parsed = new URL(urlString);
-    const allowedHosts = [
-      'github.com',
-      'user-images.githubusercontent.com',
-      'raw.githubusercontent.com',
-      'gist.githubusercontent.com',
-      'githubusercontent.com'
-    ];
-    // Check for exact match or subdomain of allowed hosts
-    return allowedHosts.some(allowedHost =>
-      parsed.hostname === allowedHost ||
-      parsed.hostname.endsWith('.' + allowedHost)
-    );
+    // Allow github.com and any subdomain of githubusercontent.com
+    return parsed.hostname === 'github.com' ||
+           parsed.hostname === 'githubusercontent.com' ||
+           parsed.hostname.endsWith('.githubusercontent.com');
   } catch {
     return false;
   }
