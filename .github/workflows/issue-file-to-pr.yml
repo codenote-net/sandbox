@@ -54,7 +54,7 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           git add uploaded_files/
           git commit -m "Add files from issue #${{ github.event.issue.number }}"
-          git push -u origin "$BRANCH_NAME"
+          git push -u origin "$BRANCH_NAME" || { echo "::error::Failed to push branch to remote"; exit 1; }
       
       - name: Create Pull Request with GitHub CLI
         if: steps.process.outputs.files_processed == 'true'
