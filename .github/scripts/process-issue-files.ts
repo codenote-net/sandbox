@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env node
 import { Octokit } from '@octokit/rest';
 import fetch from 'node-fetch';
 import * as fs from 'fs/promises';

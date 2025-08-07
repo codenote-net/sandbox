@@ -25,11 +25,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
       
       - name: Install dependencies
         run: |
-          npm install -g tsx
           cd .github/scripts && npm install
       
       - name: Process uploaded files
@@ -41,7 +40,7 @@ jobs:
           COMMENT_ID: ${{ github.event.comment.id }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          tsx .github/scripts/process-issue-files.ts
+          node .github/scripts/process-issue-files.ts
       
       - name: Create Pull Request
         if: steps.process.outputs.files_processed == 'true'
