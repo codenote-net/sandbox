@@ -1,0 +1,13 @@
+{
+  "name": "github-scripts",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@octokit/rest": "21.0.2",
+    "node-fetch": "3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "24.2.0"
+  }
+}
