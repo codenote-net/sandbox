@@ -1,0 +1,183 @@
+#!/usr/bin/env tsx
+import { Octokit } from '@octokit/rest';
+import fetch from 'node-fetch';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { existsSync } from 'fs';
+
+interface FileMetadata {
+  issue_number: string;
+  comment_id: string;
+  files: string[];
+  timestamp: string;
+}
+
+function extractFileUrls(commentBody: string): string[] {
+  const urls: string[] = [];
+  
+  // GitHub uploaded file URL pattern
+  const assetPattern = /https:\/\/github\.com\/[^\/]+\/[^\/]+\/assets\/\d+\/[a-f0-9\-]+/g;
+  const assetMatches = commentBody.match(assetPattern) || [];
+  urls.push(...assetMatches);
+  
+  // Markdown image format pattern
+  const imgPattern = /!\[[^\]]*\]\((https:\/\/[^\)]+)\)/g;
+  let imgMatch;
+  while ((imgMatch = imgPattern.exec(commentBody)) !== null) {
+    const url = imgMatch[1];
+    if (url.includes('user-images.githubusercontent.com') || url.includes('github.com')) {
+      urls.push(url);
+    }
+  }
+  
+  // Remove duplicates
+  return [...new Set(urls)];
+}
+
+async function downloadFile(url: string, token: string): Promise<Buffer | null> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/octet-stream'
+      },
+      redirect: 'follow'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const buffer = await response.buffer();
+    return buffer;
+  } catch (error) {
+    console.error(`Error downloading ${url}:`, error);
+    return null;
+  }
+}
+
+function getFilenameFromUrl(url: string): string {
+  // Get the last part of the URL
+  let filename = url.split('/').pop() || 'file';
+  
+  // Add .bin extension if no extension exists
+  if (!filename.includes('.')) {
+    filename = `${filename}.bin`;
+  }
+  
+  // Sanitize filename (allow only alphanumeric, hyphen, underscore, and dot)
+  filename = filename.replace(/[^\w\-_.]/g, '_');
+  
+  return filename;
+}
+
+async function ensureUniqueFilename(dir: string, filename: string): Promise<string> {
+  let filePath = path.join(dir, filename);
+  let counter = 1;
+  
+  while (existsSync(filePath)) {
+    const ext = path.extname(filename);
+    const nameWithoutExt = path.basename(filename, ext);
+    const newFilename = `${nameWithoutExt}_${counter}${ext}`;
+    filePath = path.join(dir, newFilename);
+    counter++;
+  }
+  
+  return filePath;
+}
+
+async function setOutput(name: string, value: string): Promise<void> {
+  console.log(`::set-output name=${name}::${value}`);
+}
+
+async function main(): Promise<void> {
+  // Get information from environment variables
+  const token = process.env.GITHUB_TOKEN;
+  const issueNumber = process.env.ISSUE_NUMBER;
+  const commentBody = process.env.COMMENT_BODY || '';
+  const commentId = process.env.COMMENT_ID;
+  const repository = process.env.GITHUB_REPOSITORY;
+  
+  if (!token || !issueNumber || !commentId || !repository) {
+    console.error('Required environment variables are missing');
+    process.exit(1);
+  }
+  
+  // Initialize Octokit client
+  const octokit = new Octokit({
+    auth: token
+  });
+  
+  // Get repository information
+  const [owner, repo] = repository.split('/');
+  
+  // Directory to save files
+  const targetDir = path.join('uploaded_files', `issue_${issueNumber}`);
+  
+  // Create directory
+  await fs.mkdir(targetDir, { recursive: true });
+  
+  // Extract file URLs from comment
+  const fileUrls = extractFileUrls(commentBody);
+  
+  if (fileUrls.length === 0) {
+    console.log('No file URLs found in the comment');
+    await setOutput('files_processed', 'false');
+    return;
+  }
+  
+  console.log(`Found ${fileUrls.length} file(s) to download`);
+  
+  const downloadedFiles: string[] = [];
+  
+  for (const url of fileUrls) {
+    console.log(`Processing: ${url}`);
+    
+    // Download file
+    const content = await downloadFile(url, token);
+    if (!content) {
+      continue;
+    }
+    
+    // Determine filename
+    const filename = getFilenameFromUrl(url);
+    
+    // Get unique file path
+    const filePath = await ensureUniqueFilename(targetDir, filename);
+    
+    // Save file
+    await fs.writeFile(filePath, content);
+    downloadedFiles.push(filePath);
+    console.log(`Saved: ${filePath}`);
+  }
+  
+  if (downloadedFiles.length > 0) {
+    // Set GitHub Actions output
+    await setOutput('files_processed', 'true');
+    
+    const fileList = downloadedFiles.map(f => `- \`${f}\``).join('\n');
+    await setOutput('file_list', fileList);
+    
+    // Create metadata file
+    const metadata: FileMetadata = {
+      issue_number: issueNumber,
+      comment_id: commentId || '',
+      files: downloadedFiles,
+      timestamp: new Date().toISOString()
+    };
+    
+    const metadataPath = path.join(targetDir, 'metadata.json');
+    await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+    
+    console.log(`Successfully processed ${downloadedFiles.length} file(s)`);
+  } else {
+    await setOutput('files_processed', 'false');
+    console.log('No files were successfully downloaded');
+  }
+}
+
+// Execute main process
+main().catch(error => {
+  console.error('Fatal error:', error);
+  process.exit(1);
+});

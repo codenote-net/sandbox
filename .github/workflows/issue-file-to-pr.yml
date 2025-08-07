@@ -1,0 +1,65 @@
+name: Issue File to PR
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  process-file:
+    # Process only Issues with specific label (e.g., "file-upload")
+    if: |
+      github.event.issue.pull_request == null &&
+      contains(github.event.issue.labels.*.name, 'file-upload')
+    
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      issues: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      
+      - name: Install dependencies
+        run: |
+          npm install -g tsx
+          cd .github/scripts && npm install
+      
+      - name: Process uploaded files
+        id: process
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          tsx .github/scripts/process-issue-files.ts
+      
+      - name: Create Pull Request
+        if: steps.process.outputs.files_processed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Add files from issue #${{ github.event.issue.number }}"
+          title: "Add uploaded files from issue #${{ github.event.issue.number }}"
+          body: |
+            This PR adds files uploaded to issue #${{ github.event.issue.number }}
+            
+            Uploaded by: @${{ github.event.comment.user.login }}
+            Comment: ${{ github.event.comment.html_url }}
+            
+            Files added:
+            ${{ steps.process.outputs.file_list }}
+          branch: issue-${{ github.event.issue.number }}-files-${{ github.event.comment.id }}
+          delete-branch: true
+          labels: |
+            automated-pr
+            from-issue
