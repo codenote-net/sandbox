@@ -1,0 +1,28 @@
+{
+  "name": "pdf-processing-cli",
+  "version": "0.1.0",
+  "description": "CLI for extracting text and rendering PNGs from PDF documents using Pdfium WASM.",
+  "type": "module",
+  "bin": {
+    "pdf-tool": "./bin/pdf-tool.mjs"
+  },
+  "scripts": {
+    "start": "node ./bin/pdf-tool.mjs"
+  },
+  "keywords": [
+    "pdf",
+    "cli",
+    "pdfium",
+    "text",
+    "png"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": "24.8.0"
+  },
+  "dependencies": {
+    "@hyzyla/pdfium": "2.1.9",
+    "@jsquash/png": "3.1.1"
+  }
+}
